@@ -21,7 +21,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	oteltrace "go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/label"
 
 	"go.opentelemetry.io/contrib/internal/trace/parent"
@@ -32,9 +32,9 @@ type TracerProvider struct {
 	tracers     map[string]*Tracer
 }
 
-var _ oteltrace.TracerProvider = &TracerProvider{}
+var _ otel.TracerProvider = &TracerProvider{}
 
-func (p *TracerProvider) Tracer(name string, _ ...oteltrace.TracerOption) oteltrace.Tracer {
+func (p *TracerProvider) Tracer(name string, _ ...otel.TracerOption) otel.Tracer {
 	p.tracersLock.Lock()
 	defer p.tracersLock.Unlock()
 	if p.tracers == nil {
@@ -70,7 +70,7 @@ type Tracer struct {
 	endedSpans     []*Span
 }
 
-var _ oteltrace.Tracer = (*Tracer)(nil)
+var _ otel.Tracer = (*Tracer)(nil)
 
 func NewTracer(name string) *Tracer {
 	return &Tracer{
@@ -102,22 +102,19 @@ func (mt *Tracer) addEndedSpan(span *Span) {
 // parent SpanContext.
 //
 // Currently no other StartOption has any effect here.
-func (mt *Tracer) Start(ctx context.Context, name string, o ...oteltrace.SpanOption) (context.Context, oteltrace.Span) {
-	var opts oteltrace.SpanConfig
-	for _, op := range o {
-		op.Apply(&opts)
-	}
+func (mt *Tracer) Start(ctx context.Context, name string, o ...otel.SpanOption) (context.Context, otel.Span) {
+	opts := otel.NewSpanConfig(o...)
 	var span *Span
-	var sc oteltrace.SpanContext
+	var sc otel.SpanContext
 
 	parentSpanContext, _, links := parent.GetSpanContextAndLinks(ctx, opts.NewRoot)
 	parentSpanID := parentSpanContext.SpanID
 
 	if !parentSpanContext.IsValid() {
-		sc = oteltrace.SpanContext{}
+		sc = otel.SpanContext{}
 		_, _ = rand.Read(sc.TraceID[:])
 		if mt.Sampled {
-			sc.TraceFlags = oteltrace.FlagsSampled
+			sc.TraceFlags = otel.FlagsSampled
 		}
 	} else {
 		sc = parentSpanContext
@@ -130,7 +127,7 @@ func (mt *Tracer) Start(ctx context.Context, name string, o ...oteltrace.SpanOpt
 		Name:         name,
 		Attributes:   nil,
 		ParentSpanID: parentSpanID,
-		Links:        make(map[oteltrace.SpanContext][]label.KeyValue),
+		Links:        make(map[otel.SpanContext][]label.KeyValue),
 	}
 	if len(opts.Attributes) > 0 {
 		span.SetAttributes(opts.Attributes...)
@@ -147,7 +144,7 @@ func (mt *Tracer) Start(ctx context.Context, name string, o ...oteltrace.SpanOpt
 		span.Links[link.SpanContext] = link.Attributes
 	}
 
-	return oteltrace.ContextWithSpan(ctx, span), span
+	return otel.ContextWithSpan(ctx, span), span
 }
 
 // NewTracerProviderAndTracer return mock provider and tracer.

@@ -17,7 +17,7 @@ package jaeger_test
 import (
 	"fmt"
 
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -28,29 +28,29 @@ const (
 )
 
 var (
-	traceID16 = trace.ID{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa3, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36}
-	traceID32 = trace.ID{0xa1, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36, 0xa3, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36}
-	spanID    = trace.SpanID{0x00, 0xf0, 0x67, 0xaa, 0x0b, 0xa9, 0x02, 0xb7}
+	traceID16 = otel.TraceID{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xa3, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36}
+	traceID32 = otel.TraceID{0xa1, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36, 0xa3, 0xce, 0x92, 0x9d, 0x0e, 0x0e, 0x47, 0x36}
+	spanID    = otel.SpanID{0x00, 0xf0, 0x67, 0xaa, 0x0b, 0xa9, 0x02, 0xb7}
 )
 
 type extractTest struct {
 	name     string
 	headers  map[string]string
-	expected trace.SpanContext
+	expected otel.SpanContext
 }
 
 var extractHeaders = []extractTest{
 	{
 		"empty",
 		map[string]string{},
-		trace.SpanContext{},
+		otel.SpanContext{},
 	},
 	{
 		"sampling state not sample",
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:0", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID: traceID32,
 			SpanID:  spanID,
 		},
@@ -60,10 +60,10 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:1", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -71,10 +71,10 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:3", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled | trace.FlagsDebug,
+			TraceFlags: otel.FlagsSampled | otel.FlagsDebug,
 		},
 	},
 	{
@@ -82,7 +82,7 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:2", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID: traceID32,
 			SpanID:  spanID,
 		},
@@ -92,10 +92,10 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:00001", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -103,10 +103,10 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:ff", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDebug | trace.FlagsSampled,
+			TraceFlags: otel.FlagsDebug | otel.FlagsSampled,
 		},
 	},
 	{
@@ -114,10 +114,10 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:1", traceID16Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID:    traceID16,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -125,10 +125,10 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:1", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -136,10 +136,10 @@ var extractHeaders = []extractTest{
 		map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:whatever:1", traceID32Str, spanIDStr),
 		},
-		trace.SpanContext{
+		otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 }
@@ -203,17 +203,17 @@ var invalidExtractHeaders = []extractTest{
 
 type injectTest struct {
 	name        string
-	sc          trace.SpanContext
+	sc          otel.SpanContext
 	wantHeaders map[string]string
 }
 
 var injectHeaders = []injectTest{
 	{
 		name: "sampled",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:1", traceID32Str, spanIDStr),
@@ -221,10 +221,10 @@ var injectHeaders = []injectTest{
 	},
 	{
 		name: "debug",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID32,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled | trace.FlagsDebug,
+			TraceFlags: otel.FlagsSampled | otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			jaegerHeader: fmt.Sprintf("%s:%s:0:3", traceID32Str, spanIDStr),
@@ -232,7 +232,7 @@ var injectHeaders = []injectTest{
 	},
 	{
 		name: "not sampled",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID: traceID32,
 			SpanID:  spanID,
 		},
@@ -245,26 +245,26 @@ var injectHeaders = []injectTest{
 var invalidInjectHeaders = []injectTest{
 	{
 		name: "empty",
-		sc:   trace.SpanContext{},
+		sc:   otel.SpanContext{},
 	},
 	{
 		name: "missing traceID",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
 		name: "missing spanID",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID32,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
 		name: "missing both traceID and spanID",
-		sc: trace.SpanContext{
-			TraceFlags: trace.FlagsSampled,
+		sc: otel.SpanContext{
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 }

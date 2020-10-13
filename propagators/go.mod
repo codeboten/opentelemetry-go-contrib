@@ -8,5 +8,5 @@ require (
 	github.com/google/go-cmp v0.5.2
 	github.com/stretchr/testify v1.6.1
 	go.opentelemetry.io/contrib v0.13.0
-	go.opentelemetry.io/otel v0.13.0
+	go.opentelemetry.io/otel v0.13.1-0.20201013220238-8ed55f598061
 )

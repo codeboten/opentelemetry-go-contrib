@@ -18,7 +18,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -42,18 +42,18 @@ var (
 	traceID64bitPadded = mustTraceIDFromHex("0000000000000000a3ce929d0e0e4736")
 )
 
-func mustTraceIDFromHex(s string) (t trace.ID) {
+func mustTraceIDFromHex(s string) (t otel.TraceID) {
 	var err error
-	t, err = trace.IDFromHex(s)
+	t, err = otel.TraceIDFromHex(s)
 	if err != nil {
 		panic(err)
 	}
 	return
 }
 
-func mustSpanIDFromHex(s string) (t trace.SpanID) {
+func mustSpanIDFromHex(s string) (t otel.SpanID) {
 	var err error
-	t, err = trace.SpanIDFromHex(s)
+	t, err = otel.SpanIDFromHex(s)
 	if err != nil {
 		panic(err)
 	}
@@ -63,14 +63,14 @@ func mustSpanIDFromHex(s string) (t trace.SpanID) {
 type extractTest struct {
 	name    string
 	headers map[string]string
-	wantSc  trace.SpanContext
+	wantSc  otel.SpanContext
 }
 
 var extractHeaders = []extractTest{
 	{
 		name:    "empty",
 		headers: map[string]string{},
-		wantSc:  trace.EmptySpanContext(),
+		wantSc:  otel.SpanContext{},
 	},
 	{
 		name: "multiple: sampling state defer",
@@ -78,10 +78,10 @@ var extractHeaders = []extractTest{
 			b3TraceID: traceIDStr,
 			b3SpanID:  spanIDStr,
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 	},
 	{
@@ -91,7 +91,7 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Sampled: "0",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -103,10 +103,10 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Sampled: "1",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -116,10 +116,10 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Sampled: "true",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -129,7 +129,7 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Sampled: "false",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -141,10 +141,10 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Flags:   "1",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled | trace.FlagsDebug,
+			TraceFlags: otel.FlagsSampled | otel.FlagsDebug,
 		},
 	},
 	{
@@ -155,10 +155,10 @@ var extractHeaders = []extractTest{
 			b3Sampled: "1",
 			b3Flags:   "2",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -171,10 +171,10 @@ var extractHeaders = []extractTest{
 			b3Sampled: "0",
 			b3Flags:   "1",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDebug | trace.FlagsSampled,
+			TraceFlags: otel.FlagsDebug | otel.FlagsSampled,
 		},
 	},
 	{
@@ -185,10 +185,10 @@ var extractHeaders = []extractTest{
 			b3Sampled:      "1",
 			b3ParentSpanID: "00f067aa0ba90200",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -196,7 +196,7 @@ var extractHeaders = []extractTest{
 		headers: map[string]string{
 			b3Sampled: "0",
 		},
-		wantSc: trace.EmptySpanContext(),
+		wantSc: otel.SpanContext{},
 	},
 	{
 		name: "multiple: left-padding 64-bit traceID",
@@ -204,10 +204,10 @@ var extractHeaders = []extractTest{
 			b3TraceID: "a3ce929d0e0e4736",
 			b3SpanID:  spanIDStr,
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID64bitPadded,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 	},
 	{
@@ -215,10 +215,10 @@ var extractHeaders = []extractTest{
 		headers: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s", traceIDStr, spanIDStr),
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 	},
 	{
@@ -226,7 +226,7 @@ var extractHeaders = []extractTest{
 		headers: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s-0", traceIDStr, spanIDStr),
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -236,10 +236,10 @@ var extractHeaders = []extractTest{
 		headers: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s-1", traceIDStr, spanIDStr),
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -247,10 +247,10 @@ var extractHeaders = []extractTest{
 		headers: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s-d", traceIDStr, spanIDStr),
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDebug | trace.FlagsSampled,
+			TraceFlags: otel.FlagsDebug | otel.FlagsSampled,
 		},
 	},
 	{
@@ -258,10 +258,10 @@ var extractHeaders = []extractTest{
 		headers: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s-1-00000000000000cd", traceIDStr, spanIDStr),
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
@@ -269,17 +269,17 @@ var extractHeaders = []extractTest{
 		headers: map[string]string{
 			b3Context: "0",
 		},
-		wantSc: trace.EmptySpanContext(),
+		wantSc: otel.SpanContext{},
 	},
 	{
 		name: "single: left-padding 64-bit traceID",
 		headers: map[string]string{
 			b3Context: fmt.Sprintf("a3ce929d0e0e4736-%s", spanIDStr),
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID64bitPadded,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 	},
 	{
@@ -290,10 +290,10 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Sampled: "0",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	// An invalid Single Headers should fallback to multiple.
@@ -305,7 +305,7 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Sampled: "0",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -319,10 +319,10 @@ var extractHeaders = []extractTest{
 			b3SpanID:  spanIDStr,
 			b3Sampled: "invalid",
 		},
-		wantSc: trace.SpanContext{
+		wantSc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 }
@@ -527,7 +527,7 @@ var extractInvalidHeaders = []extractTest{
 type injectTest struct {
 	name             string
 	encoding         b3.Encoding
-	sc               trace.SpanContext
+	sc               otel.SpanContext
 	wantHeaders      map[string]string
 	doNotWantHeaders []string
 }
@@ -535,10 +535,10 @@ type injectTest struct {
 var injectHeader = []injectTest{
 	{
 		name: "none: sampled",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -553,7 +553,7 @@ var injectHeader = []injectTest{
 	},
 	{
 		name: "none: not sampled",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -570,10 +570,10 @@ var injectHeader = []injectTest{
 	},
 	{
 		name: "none: unset sampled",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -588,8 +588,8 @@ var injectHeader = []injectTest{
 	},
 	{
 		name: "none: sampled only",
-		sc: trace.SpanContext{
-			TraceFlags: trace.FlagsSampled,
+		sc: otel.SpanContext{
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3Sampled: "1",
@@ -604,10 +604,10 @@ var injectHeader = []injectTest{
 	},
 	{
 		name: "none: debug",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDebug,
+			TraceFlags: otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -622,10 +622,10 @@ var injectHeader = []injectTest{
 	},
 	{
 		name: "none: debug omitting sample",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled | trace.FlagsDebug,
+			TraceFlags: otel.FlagsSampled | otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -641,10 +641,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "multiple: sampled",
 		encoding: b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -660,7 +660,7 @@ var injectHeader = []injectTest{
 	{
 		name:     "multiple: not sampled",
 		encoding: b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -678,10 +678,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "multiple: unset sampled",
 		encoding: b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -697,8 +697,8 @@ var injectHeader = []injectTest{
 	{
 		name:     "multiple: sampled only",
 		encoding: b3.B3MultipleHeader,
-		sc: trace.SpanContext{
-			TraceFlags: trace.FlagsSampled,
+		sc: otel.SpanContext{
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3Sampled: "1",
@@ -714,10 +714,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "multiple: debug",
 		encoding: b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDebug,
+			TraceFlags: otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -733,10 +733,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "multiple: debug omitting sample",
 		encoding: b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled | trace.FlagsDebug,
+			TraceFlags: otel.FlagsSampled | otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -752,10 +752,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single: sampled",
 		encoding: b3.B3SingleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s-1", traceIDStr, spanIDStr),
@@ -771,7 +771,7 @@ var injectHeader = []injectTest{
 	{
 		name:     "single: not sampled",
 		encoding: b3.B3SingleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -789,10 +789,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single: unset sampled",
 		encoding: b3.B3SingleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 		wantHeaders: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s", traceIDStr, spanIDStr),
@@ -808,8 +808,8 @@ var injectHeader = []injectTest{
 	{
 		name:     "single: sampled only",
 		encoding: b3.B3SingleHeader,
-		sc: trace.SpanContext{
-			TraceFlags: trace.FlagsSampled,
+		sc: otel.SpanContext{
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3Context: "1",
@@ -826,10 +826,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single: debug",
 		encoding: b3.B3SingleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDebug,
+			TraceFlags: otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s-d", traceIDStr, spanIDStr),
@@ -846,10 +846,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single: debug omitting sample",
 		encoding: b3.B3SingleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled | trace.FlagsDebug,
+			TraceFlags: otel.FlagsSampled | otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3Context: fmt.Sprintf("%s-%s-d", traceIDStr, spanIDStr),
@@ -866,10 +866,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single+multiple: sampled",
 		encoding: b3.B3SingleHeader | b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -885,7 +885,7 @@ var injectHeader = []injectTest{
 	{
 		name:     "single+multiple: not sampled",
 		encoding: b3.B3SingleHeader | b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID: traceID,
 			SpanID:  spanID,
 		},
@@ -903,10 +903,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single+multiple: unset sampled",
 		encoding: b3.B3SingleHeader | b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDeferred,
+			TraceFlags: otel.FlagsDeferred,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -922,8 +922,8 @@ var injectHeader = []injectTest{
 	{
 		name:     "single+multiple: sampled only",
 		encoding: b3.B3SingleHeader | b3.B3MultipleHeader,
-		sc: trace.SpanContext{
-			TraceFlags: trace.FlagsSampled,
+		sc: otel.SpanContext{
+			TraceFlags: otel.FlagsSampled,
 		},
 		wantHeaders: map[string]string{
 			b3Context: "1",
@@ -939,10 +939,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single+multiple: debug",
 		encoding: b3.B3SingleHeader | b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsDebug,
+			TraceFlags: otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -958,10 +958,10 @@ var injectHeader = []injectTest{
 	{
 		name:     "single+multiple: debug omitting sample",
 		encoding: b3.B3SingleHeader | b3.B3MultipleHeader,
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled | trace.FlagsDebug,
+			TraceFlags: otel.FlagsSampled | otel.FlagsDebug,
 		},
 		wantHeaders: map[string]string{
 			b3TraceID: traceIDStr,
@@ -979,26 +979,26 @@ var injectHeader = []injectTest{
 var injectInvalidHeaderGenerator = []injectTest{
 	{
 		name: "empty",
-		sc:   trace.SpanContext{},
+		sc:   otel.SpanContext{},
 	},
 	{
 		name: "missing traceID",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			SpanID:     spanID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
 		name: "missing spanID",
-		sc: trace.SpanContext{
+		sc: otel.SpanContext{
 			TraceID:    traceID,
-			TraceFlags: trace.FlagsSampled,
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 	{
 		name: "missing traceID and spanID",
-		sc: trace.SpanContext{
-			TraceFlags: trace.FlagsSampled,
+		sc: otel.SpanContext{
+			TraceFlags: otel.FlagsSampled,
 		},
 	},
 }

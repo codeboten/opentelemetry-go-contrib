@@ -23,7 +23,7 @@ import (
 
 	mocktracer "go.opentelemetry.io/contrib/internal/trace"
 	"go.opentelemetry.io/contrib/propagators/jaeger"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -58,7 +58,7 @@ func TestExtractJaeger(t *testing.T) {
 
 				ctx := context.Background()
 				ctx = propagator.Extract(ctx, req.Header)
-				resSc := trace.RemoteSpanContextFromContext(ctx)
+				resSc := otel.RemoteSpanContextFromContext(ctx)
 				if diff := cmp.Diff(resSc, tc.expected); diff != "" {
 					t.Errorf("%s: %s: -got +want %s", tg.name, tc.name, diff)
 				}
@@ -68,11 +68,11 @@ func TestExtractJaeger(t *testing.T) {
 }
 
 type testSpan struct {
-	trace.Span
-	sc trace.SpanContext
+	otel.Span
+	sc otel.SpanContext
 }
 
-func (s testSpan) SpanContext() trace.SpanContext {
+func (s testSpan) SpanContext() otel.SpanContext {
 	return s.sc
 }
 
@@ -96,7 +96,7 @@ func TestInjectJaeger(t *testing.T) {
 			propagator := jaeger.Jaeger{}
 			t.Run(tc.name, func(t *testing.T) {
 				req, _ := http.NewRequest("GET", "http://example.com", nil)
-				ctx := trace.ContextWithSpan(
+				ctx := otel.ContextWithSpan(
 					context.Background(),
 					testSpan{
 						Span: mockSpan,

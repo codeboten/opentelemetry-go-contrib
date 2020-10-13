@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/api/trace"
 )
 
 const (
@@ -42,7 +41,7 @@ const (
 )
 
 var (
-	empty = trace.EmptySpanContext()
+	empty = otel.SpanContext{}
 
 	errMalformedTraceContextVal = errors.New("header value of uber-trace-id should contain four different part separated by : ")
 	errInvalidTraceIDLength     = errors.New("invalid trace id length, must be either 16 or 32")
@@ -64,7 +63,7 @@ var _ otel.TextMapPropagator = &Jaeger{}
 // Inject injects a context to the carrier following jaeger format.
 // The parent span ID is set to an dummy parent span id as the most implementations do.
 func (jaeger Jaeger) Inject(ctx context.Context, carrier otel.TextMapCarrier) {
-	sc := trace.SpanFromContext(ctx).SpanContext()
+	sc := otel.SpanFromContext(ctx).SpanContext()
 	headers := []string{}
 	if !sc.TraceID.IsValid() || !sc.SpanID.IsValid() {
 		return
@@ -87,16 +86,16 @@ func (jaeger Jaeger) Extract(ctx context.Context, carrier otel.TextMapCarrier) c
 	if h := carrier.Get(jaegerHeader); h != "" {
 		sc, err := extract(h)
 		if err == nil && sc.IsValid() {
-			return trace.ContextWithRemoteSpanContext(ctx, sc)
+			return otel.ContextWithRemoteSpanContext(ctx, sc)
 		}
 	}
 
 	return ctx
 }
 
-func extract(headerVal string) (trace.SpanContext, error) {
+func extract(headerVal string) (otel.SpanContext, error) {
 	var (
-		sc  = trace.SpanContext{}
+		sc  = otel.SpanContext{}
 		err error
 	)
 
@@ -115,7 +114,7 @@ func extract(headerVal string) (trace.SpanContext, error) {
 		if len(id) == traceID64bitsWidth {
 			id = traceIDPadding + id
 		}
-		sc.TraceID, err = trace.IDFromHex(id)
+		sc.TraceID, err = otel.TraceIDFromHex(id)
 		if err != nil {
 			return empty, errMalformedTraceID
 		}
@@ -127,7 +126,7 @@ func extract(headerVal string) (trace.SpanContext, error) {
 		if len(id) != spanIDWidth {
 			return empty, errInvalidSpanIDLength
 		}
-		sc.SpanID, err = trace.SpanIDFromHex(id)
+		sc.SpanID, err = otel.SpanIDFromHex(id)
 		if err != nil {
 			return empty, errMalformedSpanID
 		}
@@ -145,9 +144,9 @@ func extract(headerVal string) (trace.SpanContext, error) {
 		if flag&flagsSampled == flagsSampled {
 			// if sample bit is set, we check if debug bit is also set
 			if flag&flagsDebug == flagsDebug {
-				sc.TraceFlags |= trace.FlagsSampled | trace.FlagsDebug
+				sc.TraceFlags |= otel.FlagsSampled | otel.FlagsDebug
 			} else {
-				sc.TraceFlags |= trace.FlagsSampled
+				sc.TraceFlags |= otel.FlagsSampled
 			}
 		}
 		// ignore other bit, including firehose since we don't have corresponding flag in trace context.

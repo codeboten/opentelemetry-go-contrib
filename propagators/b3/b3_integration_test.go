@@ -23,7 +23,7 @@ import (
 
 	mocktracer "go.opentelemetry.io/contrib/internal/trace"
 	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 )
 
 var (
@@ -58,7 +58,7 @@ func TestExtractB3(t *testing.T) {
 
 				ctx := context.Background()
 				ctx = propagator.Extract(ctx, req.Header)
-				gotSc := trace.RemoteSpanContextFromContext(ctx)
+				gotSc := otel.RemoteSpanContextFromContext(ctx)
 				if diff := cmp.Diff(gotSc, tt.wantSc); diff != "" {
 					t.Errorf("%s: %s: -got +want %s", tg.name, tt.name, diff)
 				}
@@ -68,11 +68,11 @@ func TestExtractB3(t *testing.T) {
 }
 
 type testSpan struct {
-	trace.Span
-	sc trace.SpanContext
+	otel.Span
+	sc otel.SpanContext
 }
 
-func (s testSpan) SpanContext() trace.SpanContext {
+func (s testSpan) SpanContext() otel.SpanContext {
 	return s.sc
 }
 
@@ -96,7 +96,7 @@ func TestInjectB3(t *testing.T) {
 			propagator := b3.B3{InjectEncoding: tt.encoding}
 			t.Run(tt.name, func(t *testing.T) {
 				req, _ := http.NewRequest("GET", "http://example.com", nil)
-				ctx := trace.ContextWithSpan(
+				ctx := otel.ContextWithSpan(
 					context.Background(),
 					testSpan{
 						Span: mockSpan,
