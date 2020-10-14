@@ -31,7 +31,6 @@ import (
 	b3prop "go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	otelglobal "go.opentelemetry.io/otel/api/global"
-	oteltrace "go.opentelemetry.io/otel/api/trace"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/propagators"
 )
@@ -42,7 +41,7 @@ func TestChildSpanFromGlobalTracer(t *testing.T) {
 	router := mux.NewRouter()
 	router.Use(Middleware("foobar"))
 	router.HandleFunc("/user/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		span := oteltrace.SpanFromContext(r.Context())
+		span := otel.SpanFromContext(r.Context())
 		_, ok := span.(*mocktrace.Span)
 		assert.True(t, ok)
 		spanTracer := span.Tracer()
@@ -64,7 +63,7 @@ func TestChildSpanFromCustomTracer(t *testing.T) {
 	router := mux.NewRouter()
 	router.Use(Middleware("foobar", WithTracerProvider(provider)))
 	router.HandleFunc("/user/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		span := oteltrace.SpanFromContext(r.Context())
+		span := otel.SpanFromContext(r.Context())
 		_, ok := span.(*mocktrace.Span)
 		assert.True(t, ok)
 		spanTracer := span.Tracer()
@@ -99,7 +98,7 @@ func TestChildSpanNames(t *testing.T) {
 	require.Len(t, spans, 1)
 	span := spans[0]
 	assert.Equal(t, "/user/{id:[0-9]+}", span.Name)
-	assert.Equal(t, oteltrace.SpanKindServer, span.Kind)
+	assert.Equal(t, otel.SpanKindServer, span.Kind)
 	assert.Equal(t, label.StringValue("foobar"), span.Attributes["http.server_name"])
 	assert.Equal(t, label.IntValue(http.StatusOK), span.Attributes["http.status_code"])
 	assert.Equal(t, label.StringValue("GET"), span.Attributes["http.method"])
@@ -113,7 +112,7 @@ func TestChildSpanNames(t *testing.T) {
 	require.Len(t, spans, 1)
 	span = spans[0]
 	assert.Equal(t, "/book/{title}", span.Name)
-	assert.Equal(t, oteltrace.SpanKindServer, span.Kind)
+	assert.Equal(t, otel.SpanKindServer, span.Kind)
 	assert.Equal(t, label.StringValue("foobar"), span.Attributes["http.server_name"])
 	assert.Equal(t, label.IntValue(http.StatusOK), span.Attributes["http.status_code"])
 	assert.Equal(t, label.StringValue("GET"), span.Attributes["http.method"])
@@ -124,7 +123,7 @@ func TestChildSpanNames(t *testing.T) {
 func TestGetSpanNotInstrumented(t *testing.T) {
 	router := mux.NewRouter()
 	router.HandleFunc("/user/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		span := oteltrace.SpanFromContext(r.Context())
+		span := otel.SpanFromContext(r.Context())
 		ok := !span.SpanContext().IsValid()
 		assert.True(t, ok)
 		w.WriteHeader(http.StatusOK)
@@ -149,7 +148,7 @@ func TestPropagationWithGlobalPropagators(t *testing.T) {
 	router := mux.NewRouter()
 	router.Use(Middleware("foobar", WithTracerProvider(provider)))
 	router.HandleFunc("/user/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		span := oteltrace.SpanFromContext(r.Context())
+		span := otel.SpanFromContext(r.Context())
 		mspan, ok := span.(*mocktrace.Span)
 		require.True(t, ok)
 		assert.Equal(t, pspan.SpanContext().TraceID, mspan.SpanContext().TraceID)
@@ -175,7 +174,7 @@ func TestPropagationWithCustomPropagators(t *testing.T) {
 	router := mux.NewRouter()
 	router.Use(Middleware("foobar", WithTracerProvider(provider), WithPropagators(b3)))
 	router.HandleFunc("/user/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		span := oteltrace.SpanFromContext(r.Context())
+		span := otel.SpanFromContext(r.Context())
 		mspan, ok := span.(*mocktrace.Span)
 		require.True(t, ok)
 		assert.Equal(t, pspan.SpanContext().TraceID, mspan.SpanContext().TraceID)
