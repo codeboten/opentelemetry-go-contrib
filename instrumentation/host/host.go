@@ -27,7 +27,7 @@ import (
 
 	"go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/api/metric"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/unit"
 )
