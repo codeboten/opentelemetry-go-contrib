@@ -19,7 +19,7 @@ import (
 	"errors"
 	"strings"
 
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -44,7 +44,7 @@ const (
 )
 
 var (
-	empty = otel.SpanContext{}
+	empty = trace.SpanContext{}
 
 	errInvalidSampledByte        = errors.New("invalid B3 Sampled found")
 	errInvalidSampledHeader      = errors.New("invalid B3 Sampled header found")
@@ -96,13 +96,13 @@ type B3 struct {
 	InjectEncoding Encoding
 }
 
-var _ otel.TextMapPropagator = B3{}
+var _ propagation.TextMapPropagator = B3{}
 
 // Inject injects a context into the carrier as B3 headers.
 // The parent span ID is omitted because it is not tracked in the
 // SpanContext.
-func (b3 B3) Inject(ctx context.Context, carrier otel.TextMapCarrier) {
-	sc := otel.SpanFromContext(ctx).SpanContext()
+func (b3 B3) Inject(ctx context.Context, carrier propagation.TextMapCarrier) {
+	sc := trace.SpanFromContext(ctx).SpanContext()
 
 	if b3.InjectEncoding.supports(B3SingleHeader) {
 		header := []string{}
@@ -143,7 +143,7 @@ func (b3 B3) Inject(ctx context.Context, carrier otel.TextMapCarrier) {
 }
 
 // Extract extracts a context from the carrier if it contains B3 headers.
-func (b3 B3) Extract(ctx context.Context, carrier otel.TextMapCarrier) context.Context {
+func (b3 B3) Extract(ctx context.Context, carrier propagation.TextMapCarrier) context.Context {
 	var (
 		sc  trace.SpanContext
 		err error
@@ -153,7 +153,7 @@ func (b3 B3) Extract(ctx context.Context, carrier otel.TextMapCarrier) context.C
 	if h := carrier.Get(b3ContextHeader); h != "" {
 		sc, err = extractSingle(h)
 		if err == nil && sc.IsValid() {
-			return otel.ContextWithRemoteSpanContext(ctx, sc)
+			return trace.ContextWithRemoteSpanContext(ctx, sc)
 		}
 		// The Single Header value was invalid, fallback to Multiple Header.
 	}
@@ -169,7 +169,7 @@ func (b3 B3) Extract(ctx context.Context, carrier otel.TextMapCarrier) context.C
 	if err != nil || !sc.IsValid() {
 		return ctx
 	}
-	return otel.ContextWithRemoteSpanContext(ctx, sc)
+	return trace.ContextWithRemoteSpanContext(ctx, sc)
 }
 
 func (b3 B3) Fields() []string {
