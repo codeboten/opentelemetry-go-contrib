@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -109,9 +110,9 @@ func (b3 B3) Inject(ctx context.Context, carrier otel.TextMapCarrier) {
 			header = append(header, sc.TraceID.String(), sc.SpanID.String())
 		}
 
-		if sc.TraceFlags&otel.FlagsDebug == otel.FlagsDebug {
+		if sc.TraceFlags&trace.FlagsDebug == trace.FlagsDebug {
 			header = append(header, "d")
-		} else if !(sc.TraceFlags&otel.FlagsDeferred == otel.FlagsDeferred) {
+		} else if !(sc.TraceFlags&trace.FlagsDeferred == trace.FlagsDeferred) {
 			if sc.IsSampled() {
 				header = append(header, "1")
 			} else {
@@ -128,10 +129,10 @@ func (b3 B3) Inject(ctx context.Context, carrier otel.TextMapCarrier) {
 			carrier.Set(b3SpanIDHeader, sc.SpanID.String())
 		}
 
-		if sc.TraceFlags&otel.FlagsDebug == otel.FlagsDebug {
+		if sc.TraceFlags&trace.FlagsDebug == trace.FlagsDebug {
 			// Since Debug implies deferred, don't also send "X-B3-Sampled".
 			carrier.Set(b3DebugFlagHeader, "1")
-		} else if !(sc.TraceFlags&otel.FlagsDeferred == otel.FlagsDeferred) {
+		} else if !(sc.TraceFlags&trace.FlagsDeferred == trace.FlagsDeferred) {
 			if sc.IsSampled() {
 				carrier.Set(b3SampledHeader, "1")
 			} else {
@@ -144,7 +145,7 @@ func (b3 B3) Inject(ctx context.Context, carrier otel.TextMapCarrier) {
 // Extract extracts a context from the carrier if it contains B3 headers.
 func (b3 B3) Extract(ctx context.Context, carrier otel.TextMapCarrier) context.Context {
 	var (
-		sc  otel.SpanContext
+		sc  trace.SpanContext
 		err error
 	)
 
@@ -186,11 +187,11 @@ func (b3 B3) Fields() []string {
 // Multiple header. It is based on the implementation found here:
 // https://github.com/openzipkin/zipkin-go/blob/v0.2.2/propagation/b3/spancontext.go
 // and adapted to support a SpanContext.
-func extractMultiple(traceID, spanID, parentSpanID, sampled, flags string) (otel.SpanContext, error) {
+func extractMultiple(traceID, spanID, parentSpanID, sampled, flags string) (trace.SpanContext, error) {
 	var (
 		err           error
 		requiredCount int
-		sc            = otel.SpanContext{}
+		sc            = trace.SpanContext{}
 	)
 
 	// correct values for an existing sampled header are "0" and "1".
@@ -200,9 +201,9 @@ func extractMultiple(traceID, spanID, parentSpanID, sampled, flags string) (otel
 	case "0", "false":
 		// Zero value for TraceFlags sample bit is unset.
 	case "1", "true":
-		sc.TraceFlags = otel.FlagsSampled
+		sc.TraceFlags = trace.FlagsSampled
 	case "":
-		sc.TraceFlags = otel.FlagsDeferred
+		sc.TraceFlags = trace.FlagsDeferred
 	default:
 		return empty, errInvalidSampledHeader
 	}
@@ -213,8 +214,8 @@ func extractMultiple(traceID, spanID, parentSpanID, sampled, flags string) (otel
 	// shouldn't send X-B3-Sampled header along with X-B3-Flags header. Thus we will
 	// ignore X-B3-Sampled header when X-B3-Flags header is sent and valid.
 	if flags == "1" {
-		sc.TraceFlags |= otel.FlagsDebug | otel.FlagsSampled
-		sc.TraceFlags &= ^otel.FlagsDeferred
+		sc.TraceFlags |= trace.FlagsDebug | trace.FlagsSampled
+		sc.TraceFlags &= ^trace.FlagsDeferred
 	}
 
 	if traceID != "" {
@@ -224,14 +225,14 @@ func extractMultiple(traceID, spanID, parentSpanID, sampled, flags string) (otel
 			// Pad 64-bit trace IDs.
 			id = b3TraceIDPadding + traceID
 		}
-		if sc.TraceID, err = otel.TraceIDFromHex(id); err != nil {
+		if sc.TraceID, err = trace.TraceIDFromHex(id); err != nil {
 			return empty, errInvalidTraceIDHeader
 		}
 	}
 
 	if spanID != "" {
 		requiredCount++
-		if sc.SpanID, err = otel.SpanIDFromHex(spanID); err != nil {
+		if sc.SpanID, err = trace.SpanIDFromHex(spanID); err != nil {
 			return empty, errInvalidSpanIDHeader
 		}
 	}
@@ -245,7 +246,7 @@ func extractMultiple(traceID, spanID, parentSpanID, sampled, flags string) (otel
 			return empty, errInvalidScopeParent
 		}
 		// Validate parent span ID but we do not use it so do not save it.
-		if _, err = otel.SpanIDFromHex(parentSpanID); err != nil {
+		if _, err = trace.SpanIDFromHex(parentSpanID); err != nil {
 			return empty, errInvalidParentSpanIDHeader
 		}
 	}
@@ -257,13 +258,13 @@ func extractMultiple(traceID, spanID, parentSpanID, sampled, flags string) (otel
 // Single header. It is based on the implementation found here:
 // https://github.com/openzipkin/zipkin-go/blob/v0.2.2/propagation/b3/spancontext.go
 // and adapted to support a SpanContext.
-func extractSingle(contextHeader string) (otel.SpanContext, error) {
+func extractSingle(contextHeader string) (trace.SpanContext, error) {
 	if contextHeader == "" {
 		return empty, errEmptyContext
 	}
 
 	var (
-		sc       = otel.SpanContext{}
+		sc       = trace.SpanContext{}
 		sampling string
 	)
 
@@ -289,13 +290,13 @@ func extractSingle(contextHeader string) (otel.SpanContext, error) {
 			return empty, errInvalidTraceIDValue
 		}
 		var err error
-		sc.TraceID, err = otel.TraceIDFromHex(traceID)
+		sc.TraceID, err = trace.TraceIDFromHex(traceID)
 		if err != nil {
 			return empty, errInvalidTraceIDValue
 		}
 		pos += separatorWidth // {traceID}-
 
-		sc.SpanID, err = otel.SpanIDFromHex(contextHeader[pos : pos+spanIDWidth])
+		sc.SpanID, err = trace.SpanIDFromHex(contextHeader[pos : pos+spanIDWidth])
 		if err != nil {
 			return empty, errInvalidSpanIDValue
 		}
@@ -319,7 +320,7 @@ func extractSingle(contextHeader string) (otel.SpanContext, error) {
 
 				// Validate parent span ID but we do not use it so do not
 				// save it.
-				_, err = otel.SpanIDFromHex(contextHeader[pos:])
+				_, err = trace.SpanIDFromHex(contextHeader[pos:])
 				if err != nil {
 					return empty, errInvalidParentSpanIDValue
 				}
@@ -332,11 +333,11 @@ func extractSingle(contextHeader string) (otel.SpanContext, error) {
 	}
 	switch sampling {
 	case "":
-		sc.TraceFlags = otel.FlagsDeferred
+		sc.TraceFlags = trace.FlagsDeferred
 	case "d":
-		sc.TraceFlags = otel.FlagsDebug | otel.FlagsSampled
+		sc.TraceFlags = trace.FlagsDebug | trace.FlagsSampled
 	case "1":
-		sc.TraceFlags = otel.FlagsSampled
+		sc.TraceFlags = trace.FlagsSampled
 	case "0":
 		// Zero value for TraceFlags sample bit is unset.
 	default:
