@@ -87,7 +87,7 @@ var (
 // newConfig computes a config from a list of Options.
 func newConfig(opts ...Option) config {
 	c := config{
-		MeterProvider: metric.MeterProvider(),
+		MeterProvider: otel.GetMeterProvider(),
 	}
 	for _, opt := range opts {
 		opt.ApplyHost(&c)
@@ -99,7 +99,7 @@ func newConfig(opts ...Option) config {
 func Start(opts ...Option) error {
 	c := newConfig(opts...)
 	if c.MeterProvider == nil {
-		c.MeterProvider = metric.MeterProvider()
+		c.MeterProvider = otel.GetMeterProvider()
 	}
 	h := &host{
 		meter: c.MeterProvider.Meter(
