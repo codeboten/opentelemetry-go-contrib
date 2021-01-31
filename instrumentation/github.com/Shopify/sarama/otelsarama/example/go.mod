@@ -8,9 +8,11 @@ replace (
 )
 
 require (
+	github.com/DataDog/sketches-go v0.0.1 // indirect
 	github.com/Shopify/sarama v1.27.1
+	github.com/google/gofuzz v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/github.com/Shopify/sarama/otelsarama v0.13.0
-	go.opentelemetry.io/otel v0.13.0
-	go.opentelemetry.io/otel/exporters/stdout v0.13.0
-	go.opentelemetry.io/otel/sdk v0.13.0
+	go.opentelemetry.io/otel v0.16.0
+	go.opentelemetry.io/otel/exporters/stdout v0.16.0
+	go.opentelemetry.io/otel/sdk v0.16.0
 )
