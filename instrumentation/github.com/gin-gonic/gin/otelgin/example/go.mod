@@ -9,9 +9,11 @@ replace (
 )
 
 require (
+	github.com/DataDog/sketches-go v0.0.1 // indirect
 	github.com/gin-gonic/gin v1.6.3
+	github.com/google/gofuzz v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.13.0
-	go.opentelemetry.io/otel v0.13.0
-	go.opentelemetry.io/otel/exporters/stdout v0.13.0
-	go.opentelemetry.io/otel/sdk v0.13.0
+	go.opentelemetry.io/otel v0.17.0
+	go.opentelemetry.io/otel/exporters/stdout v0.17.0
+	go.opentelemetry.io/otel/sdk v0.17.0
 )
