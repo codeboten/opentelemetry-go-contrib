@@ -10,7 +10,7 @@ replace (
 
 require (
 	github.com/astaxie/beego v1.12.2
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.5
 	go.opentelemetry.io/contrib v0.13.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0
 	go.opentelemetry.io/contrib/propagators v0.13.0
