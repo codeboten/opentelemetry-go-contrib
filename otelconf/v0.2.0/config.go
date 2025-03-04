@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"go.opentelemetry.io/contrib/otelconf/internal/provider"
 	"go.opentelemetry.io/otel/log"
 	nooplog "go.opentelemetry.io/otel/log/noop"
 	"go.opentelemetry.io/otel/metric"
@@ -151,7 +152,7 @@ func ParseYAML(file []byte) (*OpenTelemetryConfiguration, error) {
 			if len(match) < 2 {
 				return s
 			}
-			return replaceEnvVar(string(match[1]))
+			return provider.ReplaceEnvVar(string(match[1]))
 		})
 	}
 
