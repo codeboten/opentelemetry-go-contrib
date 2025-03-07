@@ -8,6 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Parsing via ParseYAML in `go.opentelemetry.io/contrib/otelconf` now support environment variables in the format `${VAR_NAME}`. (#6215)
+
 ### Removed
 
 - Drop support for [Go 1.22]. (#6853)
@@ -50,7 +54,6 @@ migration](https://github.com/open-telemetry/semantic-conventions/blob/main/docs
 - Add support for configuring `HeadersList` field for OTLP exporters in `go.opentelemetry.io/contrib/config`. (#6657)
 - Add `go.opentelemetry.io/contrib/otelconf` module which is a replacement for `go.opentelemetry.io/contrib/config`. (#6796)
 - Added `WithFallbackLogExporter` to allow setting a fallback log exporter when `OTEL_LOGS_EXPORTER` is unset in `go.opentelemetry.io/contrib/exporters/autoexport`. (#6844)
-- Parsing via ParseYAML in `go.opentelemetry.io/contrib/otelconf` now support environment variables in the format `${VAR_NAME}`. (#6215)
 
 ### Changed
 
